@@ -1,103 +1,75 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { useState, useEffect } from "react"
+import NetworkGraph from "@/components/network-graph"
+import Sidebar from "@/components/sidebar"
+import Header from "@/components/header"
+import { fetchHCPDetails } from "@/lib/api"
+import { HCP } from "@/types/hop"
+import HCPModal from "@/components/hop-modal"
+
+const queryClient = new QueryClient()
+
+export default function HomePage() {
+  const [selectedHCP, setSelectedHCP] = useState<HCP | null>(null)
+  const [centerHCP, setCenterHCP] = useState<string>("emily-carter")
+  const [centerHCPData, setCenterHCPData] = useState<HCP | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 })
+  const [showConnections, setShowConnections] = useState(true)
+  const [showAnyConnections, setShowAnyConnections] = useState(false)
+
+  // Fetch center HCP data when centerHCP changes
+  useEffect(() => {
+    const fetchCenterHCP = async () => {
+      try {
+        const hcpData = await fetchHCPDetails(centerHCP)
+        setCenterHCPData(hcpData)
+      } catch (error) {
+        console.error("Failed to fetch center HCP:", error)
+      }
+    }
+
+    fetchCenterHCP()
+  }, [centerHCP])
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <QueryClientProvider client={queryClient}>
+      <div className="flex h-screen bg-gray-100">
+        <Sidebar />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+        <div className="flex-1 flex flex-col">
+          <Header
+            centerHCP={selectedHCP || centerHCPData}
+            showConnections={showConnections}
+            onShowConnectionsChange={setShowConnections}
+            showAnyConnections={showAnyConnections}
+            onShowAnyConnectionsChange={setShowAnyConnections}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            onSearch={(hcpId) => setCenterHCP(hcpId)}
+          />
+
+           <main className="flex-1 relative">
+            <NetworkGraph
+              centerHCP={centerHCPData ? centerHCPData.id : ""}
+              searchQuery={searchQuery}
+              onNodeSelect={(hcp, position) => {
+                setSelectedHCP(hcp)
+                setModalPosition(position)
+              }}
+              selectedHCP={selectedHCP}
+              showConnections={showConnections}
+              showAnyConnections={showAnyConnections}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+
+            {selectedHCP && (
+              <HCPModal hcp={selectedHCP} onClose={() => setSelectedHCP(null)} position={modalPosition} />
+            )}
+          </main>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      </div>
+    </QueryClientProvider>
+  )
 }
